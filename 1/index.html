@@ -120,7 +120,7 @@
                 <img class="image" src="media/cathedral v2.jpg" alt="Image 2">
                 <div class="description">Green image shift: (1, -1)</div>
                 <div class="description">Red image shift: (7, -1)</div>
-                <div class="description">Runtime: 0.20 sec</div>
+                <div class="description">Runtime: 0.21 sec</div>
             </div>
             <div class="progress-row">
                 <div class="description">Method: Edge Detection with Image Pyramid</div>
@@ -140,7 +140,7 @@
             This creates the weird coloring for this first image, such as the Emir having a blue-ish face.
             And, this took a significantly longer time to run, almost a complete minute.
             This runtime is especially large when compared to the other images, such as the Cathedral time from above.
-            Also, interestingly, the red image shift is (-15, -15), which is precisely the edge of the search range for alignment.
+            Also, interestingly, the red image shift is (-15, 15), which is precisely the edge of the search range for alignment.
             This implies that the best possible alignment for Euclidean distance actually needs a much larger search range.
             The second attempt uses an image pyramid to help enhance the Euclidean Distance method.
             Already, this image looks much better than the first attempt's image, while also having a significantly shorter runtime.
@@ -156,15 +156,15 @@
                 <div class="description">Method: Euclidean Distance</div>
                 <img class="image" src="media/emir v1.jpg" alt="Image 1">
                 <div class="description">Green image shift: (-3, 7)</div>
-                <div class="description">Red image shift: (-15, -15)</div>
-                <div class="description">Runtime: 49.76 sec</div>
+                <div class="description">Red image shift: (-15, 15)</div>
+                <div class="description">Runtime: 48.29 sec</div>
             </div>
             <div class="progress-row">
                 <div class="description">Method: Euclidean Distance with Image Pyramid</div>
                 <img class="image" src="media/emir v2.jpg" alt="Image 2">
                 <div class="description">Green image shift: (-3, 7)</div>
-                <div class="description">Red image shift: (107, -17)</div>
-                <div class="description">Runtime: 9.91 sec</div>
+                <div class="description">Red image shift: (107, 17)</div>
+                <div class="description">Runtime: 9.65 sec</div>
             </div>
             <div class="progress-row">
                 <div class="description">Method: Edge Detection with Image Pyramid</div>
@@ -174,7 +174,6 @@
                 <div class="description">Runtime: 21.35 sec</div>
             </div>
         </div>
-        <!-- Repeat the row for the remaining 6 rows -->
     </div>
     <div class="section">
         <h2>Final Results</h2>
@@ -182,7 +181,7 @@
             Below are the final results for the best alignment of the images. 
             The first 3 are the jpg images that were provided in the dataset.
             The next 11 are the tif images that were also provided in the dataset.
-            The final 4 images are custom images that I chose from the Prokudin-Gorskii collection.
+            The final 2 images are custom images that I chose from the Prokudin-Gorskii collection.
         </p>
         <div class="row">
             <div class="progress-row">
@@ -292,35 +291,23 @@
                 <div class="description">Runtime: 17.27 sec</div>
             </div>
             <div class="progress-row">
-                <div class="description">p1.jpg</div>
-                <img class="image" src="media/p1.jpg" alt="Image 3">
-                <div class="description">Green image shift: (, )</div>
-                <div class="description">Red image shift: (, )</div>
-                <div class="description">Runtime: 0 sec</div>
+                <div class="description">trees_beside_water.tif</div>
+                <img class="image" src="media/aligned_trees_beside_water.jpg" alt="Image 3">
+                <div class="description">Green image shift: (58, -32)</div>
+                <div class="description">Red image shift: (131, -61)</div>
+                <div class="description">Runtime: 18.04 sec</div>
             </div>
         </div>
         <div class="row">
             <div class="progress-row">
-                <div class="description">p1.jpg</div>
-                <img class="image" src="media/p1.jpg" alt="Image 1">
-                <div class="description">Green image shift: (, )</div>
-                <div class="description">Red image shift: (, )</div>
-                <div class="description">Runtime: 0 sec</div>
+                <div class="description">khan.tif</div>
+                <img class="image" src="media/aligned_khan.jpg" alt="Image 1">
+                <div class="description">Green image shift: (52, -4)</div>
+                <div class="description">Red image shift: (109, -21)</div>
+                <div class="description">Runtime: 15.51 sec</div>
             </div>
-            <div class="progress-row">
-                <div class="description">p1.jpg</div>
-                <img class="image" src="media/p1.jpg" alt="Image 2">
-                <div class="description">Green image shift: (, )</div>
-                <div class="description">Red image shift: (, )</div>
-                <div class="description">Runtime: 0 sec</div>
-            </div>
-            <div class="progress-row">
-                <div class="description">p1.jpg</div>
-                <img class="image" src="media/p1.jpg" alt="Image 3">
-                <div class="description">Green image shift: (, )</div>
-                <div class="description">Red image shift: (, )</div>
-                <div class="description">Runtime: 0 sec</div>
-            </div>
+            <div class="progress-row"></div>
+            <div class="progress-row"></div>
         </div>
     </div>
 </body>
