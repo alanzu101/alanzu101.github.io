@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 2</title>
+    <style>
+        .section {
+            margin-bottom: 20px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 0px;
+        }
+        .progress-row {
+            flex: 1;
+            margin: 25px;
+            text-align: center;
+            max-width: 33%;
+        }
+        .image {
+            margin-top: 15px;
+            margin-bottom: 0px;
+            width: 100%;
+            height: auto;
+        }
+        .description {
+            margin-top: 0px;
+            text-align: center;
+        }
+        p {
+            text-indent: 40px;
+        }
+        h2 {
+            margin-bottom: 0px;
+        }
+        @media screen and (max-width: 768px) {
+            .image-wrapper {
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1> Project 2 - Fun with Filters and Frequencies</h1>
+    <div class="section">
+        <h2>General Overview</h2>
+        <p>
+            The goal of this project was to implement techniques for image filters and fiddling around with frequencies for creating hybrid images or blending images.
+            Using gaussian filters, I could filter out the higher frequencies of an image, which helped me sharpen them.
+            I also implemented gaussian and laplacian stacks to help blend images together, using a mask.
+        </p>
+    </div>
+    <div class="section">
+        <h2>Part 1: Fun with Filters</h2>
+
+        <h4>Part 1.1: Finite Difference Operator</h4>
+        <div style="text-align: center;">
+            <img src="images/part11filt.png" alt="Part 1.1 Filtered Image" style="max-width: 100%; height: auto;">
+        </div>
+        <p>
+            Above are the finite difference filters in the x and y directions.
+            Let the image be M.
+            Then, the partial derivative in the x direction is G_x = M_x * D_x.
+            The partial derivative in the y direction is G_y = M_y * D_y.
+            To get the gradient magnitude of the image, we simply do G_m = sqrt(G_x^2 + G_y^2).
+            So, the gradient magnitude is just the Euclidean distance of the two partial derivatives.
+            Finally, to turn this into an edge image, we binarize G_m by thresholding it, where we only accept values above a threshold.
+            The results are displayed below:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">original image</div>
+                <img class="image" src="images/part1-1/im_input.png" alt="Image 1">
+                <div class="description">no modifications to image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_x</div>
+                <img class="image" src="images/part1-1/im_dx.png" alt="Image 2">
+                <div class="description">partial derivative in x of image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_y</div>
+                <img class="image" src="images/part1-1/im_dy.png" alt="Image 3">
+                <div class="description">partial derivative in y of image</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">G_m</div>
+                <img class="image" src="images/part1-1/im_gm.png" alt="Image 4">
+                <div class="description">gradient magnitude of image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_m, binarized</div>
+                <img class="image" src="images/part1-1/im_edge.png" alt="Image 5">
+                <div class="description">threshold = 0.25</div>
+            </div>
+            <div class="progress-row"></div>
+        </div>
+
+        <h4>Part 1.2: Derivative of Gaussian (DoG) Filter</h4>
+        <p>
+            First, we try the blur then redo the previous methods.
+            For this, we first apply the gaussian filter to the original image.
+            Afterwards, we apply the same methods as before.
+            Compared to the results from part 1.1, these images are significantly smoother.
+            This can be especially seen in the partial derivative images, where they feel less sharp.
+            Also, the gradient magnitude is less noisy, and the binarized image is much more smooth.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">blurred original image</div>
+                <img class="image" src="images/part1-2/blur_im_input.png" alt="Image 1">
+                <div class="description">gaussian filter blurred image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_x</div>
+                <img class="image" src="images/part1-2/blur_im_dx.png" alt="Image 2">
+                <div class="description">partial derivative in x of blurred image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_y</div>
+                <img class="image" src="images/part1-2/blur_im_dy.png" alt="Image 3">
+                <div class="description">partial derivative in y of blurred image</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">G_m</div>
+                <img class="image" src="images/part1-2/blur_im_gm.png" alt="Image 4">
+                <div class="description">gradient magnitude of blurred image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_m, binarized</div>
+                <img class="image" src="images/part1-2/blur_im_edge.png" alt="Image 5">
+                <div class="description">threshold = 0.09</div>
+            </div>
+            <div class="progress-row"></div>
+        </div>
+
+        <p>
+            Now, we try the second method by creating the DoG filters. 
+            As seen below, the results are the same as the previous method.
+            Both methods in part 1.2 produce the same results at the end, because convolution is communitive.
+            So, whether we are applying the gaussian filter to smooth the original image or to the finite difference operators, we will eventually get the same result.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">original image</div>
+                <img class="image" src="images/part1-2/dog_im_input.png" alt="Image 1">
+                <div class="description">no effects applied</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">D_x convolved</div>
+                <img class="image" src="images/part1-2/dog_dx.png" alt="Image 2">
+                <div class="description">result after D_x convolved with Gaussian kernel</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">D_y convolved</div>
+                <img class="image" src="images/part1-2/dog_dy.png" alt="Image 3">
+                <div class="description">result after D_y convolved with Gaussian kernel</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">G_x</div>
+                <img class="image" src="images/part1-2/dog_im_dx.png" alt="Image 4">
+                <div class="description">partial derivative in x using DoG</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_y</div>
+                <img class="image" src="images/part1-2/dog_im_dy.png" alt="Image 5">
+                <div class="description">partial derivative in y using DoG</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">G_m</div>
+                <img class="image" src="images/part1-2/dog_im_gm.png" alt="Image 6">
+                <div class="description">gradient magnitude using DoG</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">G_m, binarized</div>
+                <img class="image" src="images/part1-2/dog_im_edge.png" alt="Image 7">
+                <div class="description">threshold = 0.09/div>
+            </div>
+            <div class="progress-row"></div>
+            <div class="progress-row"></div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Part 2: Fun with Frequencies</h2>
+
+        <h4>Part 2.1: Image Sharpening</h4>
+        <p>
+            In total, I have sharpened three images.
+            Each row reflects the progression of each image as it is sharpened.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">taj.jpg</div>
+                <img class="image" src="images/part2-1/taj._orig.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 2</div>
+                <img class="image" src="images/part2-1/taj._2.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 4</div>
+                <img class="image" src="images/part2-1/taj._4.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 6</div>
+                <img class="image" src="images/part2-1/taj._6.png" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">light.jpg</div>
+                <img class="image" src="images/part2-1/light._orig.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 2</div>
+                <img class="image" src="images/part2-1/light._2.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 4</div>
+                <img class="image" src="images/part2-1/light._4.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 6</div>
+                <img class="image" src="images/part2-1/light._6.png" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">dog.png</div>
+                <img class="image" src="images/part2-1/dog._orig.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 2</div>
+                <img class="image" src="images/part2-1/dog._2.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 4</div>
+                <img class="image" src="images/part2-1/dog._4.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpha = 6</div>
+                <img class="image" src="images/part2-1/dog._6.png" alt="Image 3">
+            </div>
+        </div>
+
+        <p>
+            As seen above, as alpha increased, each image got gradually sharper. 
+            I wanted to experiment with the light and dog images, because when I took the light image in Japan, I thought it was too blury.
+            For the dog images, it had a lot of fur, so sharpening the image will provide more contrast to these details.
+            Interestingly, for the light image, because overall my photo quality was too blurry, it mainly captured the edge features in the middle.
+            This location in Tokyo is where the light through the clouds was shining on.
+            So, as alpha increased, this region got highlighted more and more.
+            The dog's fur showed created contrast and sharpness, as expected.
+            My favorite image was the dog's progression, and as I thought its fur was already pretty clear, I chose this image for the evaluation.
+            Below are the results from blurring the dog image, then re-sharpening it:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">dog.png</div>
+                <img class="image" src="images/part2-1/eval_dog_orig.png" alt="Image 1">
+                <div class="description">original image before effects</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">blurred dog</div>
+                <img class="image" src="images/part2-1/eval_dog_blur.png" alt="Image 2">
+                <div class="description">low filter of original image</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">sharpened image</div>
+                <img class="image" src="images/part2-1/eval_dog_sharp.png" alt="Image 3">
+                <div class="description">added high filters repeatedly to sharpen</div>
+            </div>
+        </div>
+        
+
+        <h4>Part 2.2: Hybrid Images</h4>
+        <p>
+            This section of the project was to replicate the SIGGRAPH paper on hybrid images. 
+            The idea is when viewed from close and far distances, the image would look drastically different.
+            This illusion is created by combining the low frequencies of one image with the high frequencies of another.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Derek's image</div>
+                <img class="image" src="images/part2-2/DerekPicture.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Nutmeg's image</div>
+                <img class="image" src="images/part2-2/nutmeg.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Derek + Nutmeg</div>
+                <img class="image" src="images/part2-2/derekNutmeg.png" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Babak's image</div>
+                <img class="image" src="images/part2-2/babak.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Bamman's image</div>
+                <img class="image" src="images/part2-2/bamman.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Failed hybrid</div>
+                <img class="image" src="images/part2-2/fail.png" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">dog facing left</div>
+                <img class="image" src="images/part2-2/left.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">dog facing right</div>
+                <img class="image" src="images/part2-2/right.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">left + right</div>
+                <img class="image" src="images/part2-2/flip.png" alt="Image 3">
+            </div>
+        </div>
+
+        <p>
+            I could not find a way to make Babak and Bamman's image work, mainly because of Babak's facial features.
+            While tuning the code, I could see Bamman's head structure when viewing the image from far away.
+            However, Baback's eyebrows would always appear instead of Bamman's glasses.
+            Also because Baback's image has darker colors, they tended to dominate the hybrid image.
+            My favorite result was of the puppy looking either right or left.
+            Below is the fourier frequency analysis of the images:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">left.jpg</div>
+                <img class="image" src="images/part2-2/fourier_left_image.png" alt="Image 1">
+                <div class="description">frequency of image facing left</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">right.jpg</div>
+                <img class="image" src="images/part2-2/fourier_right_image.png" alt="Image 2">
+                <div class="description">frequency of image facing right</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">flip.png</div>
+                <img class="image" src="images/part2-2/fourier_hybrid_image.png" alt="Image 3">
+                <div class="description">frequency of hybrid image</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">left.jpg</div>
+                <img class="image" src="images/part2-2/fourier_left_lpf.png" alt="Image 1">
+                <div class="description">frequency of left image after low-pass-filtered</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">right.jpg</div>
+                <img class="image" src="images/part2-2/fourier_right_hpf.png" alt="Image 2">
+                <div class="description">frequency of right image after high-pass-filtered</div>
+            </div>
+            <div class="progress-row"></div>
+        </div>
+
+        <p>
+            Bells and Whistles: I used color to enhance the effects of the hybrid images.
+            It seems to be working much better for the low-frequency component. 
+            This is because the high-frequency components captures details such as edges, meaning that most pixels aren't captured.
+            So, since the low pass filter lets much more pixels through, the majority of the color would be then from the low-frequency image.
+        </p>
+
+        <h4>Part 2.3: Gaussian and Laplacian Stacks</h4>
+        <p>
+            This section of the project is setting up the stacks in order to replicate the oraple result.
+            Below are the recreated results for the laplacian stack levels, which are very similar to the original paper's:
+        </p>
+        <div style="text-align: center;">
+            <img src="images/part2-34/im_comb_progress.png" alt="Part 1.1 Filtered Image" style="max-width: 100%; height: auto;">
+        </div>
+
+        <h4>Part 2.4: Multiresolution Blending</h4>
+        <p>
+            In this section, I added up the combined laplacian stack levels to create a blended image.
+            Below are the original two images, the mask applied, and the resulting blend:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">apple.jpeg</div>
+                <img class="image" src="images/part2-34/apple.jpeg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">orange.jpeg</div>
+                <img class="image" src="images/part2-34/orange.jpeg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">mask applied (vertical split)</div>
+                <img class="image" src="images/part2-34/mask.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">oraple!</div>
+                <img class="image" src="images/part2-34/oraple.png" alt="Image 4">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">pizza 1</div>
+                <img class="image" src="images/part2-34/pizza1.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">pizza 2</div>
+                <img class="image" src="images/part2-34/pizza2.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">mask applied (vertical split)</div>
+                <img class="image" src="images/part2-34/mask3.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">half-half pizza</div>
+                <img class="image" src="images/part2-34/pizza_supreme.png" alt="Image 4">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">lego storm trooper</div>
+                <img class="image" src="images/part2-34/trooper.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">background (airplane wing)</div>
+                <img class="image" src="images/part2-34/bck.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">mask applied (stormtrooper figure)</div>
+                <img class="image" src="images/part2-34/mask2.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">figure on wing</div>
+                <img class="image" src="images/part2-34/trooper_scene.png" alt="Image 4">
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Reflection</h2>
+        <p>
+            It was really fun to implement these filters and manipulate the frequency of the images.
+            What I enjoyed most was making the oraple, because this combined the other techniques I learned about filters and low vs high frequencies to make a seamless image.
+        </p>
+
+    </div>
+</body>
+</html>
