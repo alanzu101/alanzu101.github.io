@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 3</title>
+    <style>
+        .section {
+            margin-bottom: 20px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 0px;
+        }
+        .progress-row {
+            flex: 1;
+            margin: 25px;
+            text-align: center;
+            max-width: 33%;
+        }
+        .image {
+            margin-top: 15px;
+            margin-bottom: 0px;
+            width: 100%;
+            height: auto;
+        }
+        .description {
+            margin-top: 0px;
+            text-align: center;
+        }
+        p {
+            text-indent: 40px;
+        }
+        h2 {
+            margin-bottom: 0px;
+        }
+        @media screen and (max-width: 768px) {
+            .image-wrapper {
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1> Project 3 - Face Morphing</h1>
+    <div class="section">
+        <h2>General Overview</h2>
+        <p>
+            In this project, I implemented several algorithms related to face morphing.
+            First, I used the available correspondences tool to define label points for the images I wished to morph.
+            The online tool is located <a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html">here</a>.
+            Then, I used Delaunay to triangulate the points.
+            Afterwards, I defined the computeAffine(tri1_pts, tri2_pts) function, which calculates the affine transformation matrix.
+            Finally, I defined various other functions to manipulate the face images.
+            For example, morph() is used to slowly morph image A into image B, thereby creating the frames for a gif.
+            Similar logic can also be used to get the average face or to warp a single image onto another.
+            Finally, I used these functions to create a caricatures by exaggerating some facial features, and I also merged my face with the asian female average image to change the gender appearance on the mugshot.
+        </p>
+    </div>
+    <div class="section">
+        <h2>Part 1: Defining Correspondences</h2>
+        <p>
+            I first used the public tool mentioned previously to create the pairs of corresponding points between my image and my friend's image.
+            My friend Henry is my roommate, so we took our mugshots with the same background and lighting.
+            Including the corners of the images, there are a total of 88 points per image.
+            I mainly highlighted where our faces differed, such as Henry having a chunk of hair blocking the top-right part of his forehead, Henry's hair shaped more like a mushroom, or my ears being less flat than Henry's.
+            I also used more points on important facial features like the eyes, nose, chin outline, and mouth.
+            I finally then generated a Delaunay triangulation of the average of the label points between the two images, which would lessen potential triangle deformations.
+            To show the edges of the triangles, I used green, and to show the label points, I used white dots.
+            Below are the two images and their after-image versions with the traingulation and label points:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Alan's (my) image</div>
+                <img class="image" src="images/alan.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Henry's image</div>
+                <img class="image" src="images/henry.png" alt="Image 2">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Alan's image triangulated</div>
+                <img class="image" src="images/alan_tri.png" alt="Image 4">
+            </div>
+            <div class="progress-row">
+                <div class="description">Henry's image triangulaged</div>
+                <img class="image" src="images/henry_tri.png" alt="Image 5">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Part 2: Computing the "Mid-way Face"</h2>
+        <p>
+            To compute the midway face, I first got the average image by adding up the two images and dividing by 2.
+            Next, I use computeAffine() to get the transformation matrix from each triangle to the corresponding triangle in the other image.
+            Finally, I morph the two images together by using the transformation matrix to warp the images and then blend them together.
+            To blend the image, I simply took some weighted average of the images. 
+            Because this part of the project is for getting the midway face, this meant that I took the average of the two images.
+            As shown below, the midway face shares quite a few distinct features between the start and end images.
+            Henry's hair is showing a bit on the top-right, the lips are starting to be more pronounced, and the shirt is a mixture between the two.
+            Below are the results: 
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Alan's image</div>
+                <img class="image" src="images/alan.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Mid-way face</div>
+                <img class="image" src="images/mid_face.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Henry's image</div>
+                <img class="image" src="images/henry.png" alt="Image 3">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Part 3: The Morph Sequence</h2>
+        <p>
+            This part heavily reused the helped functions I wrote for the previous part.
+            For each frame in the morphing animation, I simply just changed the warp_frac and dissolve_frac values accordingly.
+            In total, there are 46 frames.
+            The first frame 0 is purely my image.
+            The last frame 45 is purely Henry's image.
+            As shown, Henry's hair begins to "sprout" and grows out, while the ears begin to become more flat against the head.
+            The lips also become more pronounced and the eyes become more like Henry's, and the chin becomes more narrow.
+            Below is the gif of the morphing sequence:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+            </div>
+            <div class="progress-row">
+                <div class="description">Morphing Gif</div>
+                <img class="image" src="images/morph.gif" alt="Image 1">
+            </div>
+            <div class="progress-row">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Part 4: The "Mean Face" of a Population</h2>
+        <p>
+            The dataset of annotated faces that I used was the Danes dataset with 240 images (IMM Face Database).
+            Here is the <a href="https://web.archive.org/web/20070613075740/http://www2.imm.dtu.dk/~aam/datasets/datasets.html">link</a> from the WayBack Machine from 2007.
+            For the subset of the population, I used the male neutral faces, filtering based on "1m" in the filename. 
+            I first warped three images onto the average Dane face and produced the average face.
+            I then warped my face onto the average geometry, and then I warped the average Dane face onto my facial geometry.
+            For my face warped onto the average, the results make sense, because my original face was a bit tilted.
+            And, since my facial feature region was a bit smaller, this meant the center of my face looks enlarged based on this warp.
+            Similarly, for the average dane face warped onto my geometry, the center facial features become a bit more scrunched together.
+            And, since the label points as shown in the asf files only highlight the face and not the entire head structure, this meant my face warped onto the danish one looks like the forehead is compressed.
+            This makes sense, as my forehead is not mapped to the top forehead of the average dane face, as there are no corresponding points there.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original 16-1m.jpg</div>
+                <img class="image" src="images/ori_2.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Original 20-1m.jpg</div>
+                <img class="image" src="images/ori_4.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Original 32-1m.jpg</div>
+                <img class="image" src="images/ori_6.jpg" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Warped 16-1m.jpg</div>
+                <img class="image" src="images/warp_2.jpg" alt="Image 1">
+                <div class="description">warped onto average dane neutral face</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">Warped 20-1m.jpg</div>
+                <img class="image" src="images/warp_4.jpg" alt="Image 2">
+                <div class="description">warped onto average dane neutral face</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">Warped 32-1m.jpg</div>
+                <img class="image" src="images/warp_6.jpg" alt="Image 3">
+                <div class="description">warped onto average population face</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+            </div>
+            <div class="progress-row">
+                <div class="description">Average Face of Population</div>
+                <img class="image" src="images/avg_face.jpg" alt="Image 1">
+                <div class="description">population is neutral male faces</div>
+            </div>
+            <div class="progress-row">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Neutral face</div>
+                <img class="image" src="images/neutral.jpg" alt="Image 1">
+                <div class="description">another mugshot, with my neutral face</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">My face warped</div>
+                <img class="image" src="images/alan_on_avg.jpg" alt="Image 2">
+                <div class="description">warped onto average face's geometry</div>
+            </div>
+            <div class="progress-row">
+                <div class="description">Average face warped</div>
+                <img class="image" src="images/avg_on_alan.jpg" alt="Image 3">
+                <div class="description">warped onto my face's geometry</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Part 5: Caricatures: Extrapolating from the Mean</h2>
+        <p>
+            Using the average face from the previous part, I extrapolated from this mean to create caricatures of my face.
+            As show, as I increase alpha, the features of my face become more exaggerated.
+            My forehead also becomes more "crushed", since, as stated previously, the asf files don't have label points on the forehead.
+            So, only my eyes, nose, mouth, and chin are being exaggerated, while the rest of my facial features are being warped to accommodate for such changes.
+            Below are the results for when alpha = 0.75 and alpha = 1.5:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">alpha = 0.75</div>
+                <img class="image" src="images/carc_s.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">alpa = 1.5</div>
+                <img class="image" src="images/carc_l.jpg" alt="Image 1">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Bells & Whistles: Gender Change on Male Face</h2>
+        <p>
+            For this part, I used my face image and the image of the average of mongolian women. 
+            The average image is found <a href="https://pmsol3.wordpress.com/wp-content/uploads/2009/08/averagemongolianwoman.jpg">here</a>.
+            In total for this part, I produced three images.
+            The first is morphing just the shape, so I morphed my face onto the average's geometry.
+            The next is morphing just the appearance, so I morphed the average's appearance onto my geometry.
+            Finally, I morphed both the shape and appearance together.
+            The final result does show some more feminine features on my face.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">My face</div>
+                <img class="image" src="images/alan_mug.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Average female mongolian face</div>
+                <img class="image" src="images/avg_f_asian.jpg" alt="Image 2">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Morphing shape only</div>
+                <img class="image" src="images/morph_shape.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Morphing appearance only</div>
+                <img class="image" src="images/morph_app.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Morphing both together</div>
+                <img class="image" src="images/morph_both.jpg" alt="Image 3">
+            </div>
+        </div>
+    </div>
+
+    
+</body>
+</html>
