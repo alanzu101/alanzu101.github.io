@@ -226,8 +226,390 @@
         </div>
     </div>
     
-    
+    <h1> Part 2: Feature Matching for Autostitching</h1>
+    <div class="section">
+        <h2>Overview</h2>
+        <p>
+            This part of the project is an extension of the previous part, where now we want to automatically stitch images together instead of having to manually choose the feature points.
+            To do this, we follow the <a href="https://inst.eecs.berkeley.edu/~cs180/fa24/hw/proj4/Papers/MOPS.pdf">MOPS</a> paper.
+            Mainly, we split this into 5 steps:
+            <ol>
+                <li>We detect Harris corners in an image. We can then filter out these corners based on their scores, and we then use ANMS to keep corners that are spread out across the image.</li>
+                <li>We extract feature descriptors for each corner.</li>
+                <li>We match these feature descriptors between the two images, hence creating the correlation between images.</li>
+                <li>We search for the best homography of these points by using RANSAC.</li>
+                <li>Finally, reusing code from the previous part, we generate the mosaics.</li>
+            </ol>
+        </p>
+        To show the results of each step, we will use the same set of images, the ones taken near Berkeley Way West.
+    </div>
+    <div class="section">
+        <h2>Step 1: Detecting corner features in an image</h2>
+        <p>
+            For this part, we first start with the Harris Interest Point Detector.
+            Below are all related images to this part.
+            This part of the code was provided for us as part of the project.
+            However, this naive approach for colleecting feature points is not idea. 
+            As shown below, this meant that too many points are captured, some of which are due to noise.
+            This also might be due to the fact that my camera lens isn't good, so the image quality for shots such as the sky might introduce some sort of pixelated gradient, which introduces incorrect "edges" in a supposed to be smooth section of the photo.
+            As a result of this, the image is covered with feature points using the naive Harris corner detector.
+            Below are the images for the H matrix and points detected of the sample image:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original sample image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Harris matrix of image</div>
+                <img class="image" src="im2/harris_m.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Harris corners detected (naive)</div>
+                <img class="image" src="im2/harris_c.png" alt="Image 3">
+            </div>
+        </div>
+        <p>
+            Again, notice how there are way too many points detected. 
+            Most are also simply noise, such as all the ones in the sky, which we don't want to affect our results.
+            However, the Harris matrix H shows certain areas are "important".
+            This is because their pixel corner scores are higher, so those areas are brighter in the matrix.
+            To remove such noise, we can filter the detected images to keep only the points that have a high enough corner strength, which is given by values in H.
+            Each value in H is the score for the corresponding pixel from the original sample image.
+            I simply filtered by using a threshold of 0.1, which is a good value to keep only the most important points.
+            After filtering the points, we get the improvement shown below:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original sample image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Corners detected (naive)</div>
+                <img class="image" src="im2/harris_c.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Corners detected (filtered)</div>
+                <img class="image" src="im2/harris_im2.png" alt="Image 3">
+            </div>
+        </div>
+        <p>
+            Notice how the images shown above show a significantly less number of points captured. 
+            And, compared to the Harris matrix, the points do align with "important" features, such as certain areas in the trees or edges on the buildings.
+            We now do this for both images taken so we have two sets of points, one for each image:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original left image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points for left image </div>
+                <img class="image" src="im2/harris_im2.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">Original right image</div>
+                <img class="image" src="images/2r.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points for right image</div>
+                <img class="image" src="im2/harris_im1.png" alt="Image 3">
+            </div>
+        </div>
+        <p>
+            We can already see that some points can potentially match to each other. 
+            However, there are still way too many points, currently well above 1k.
+            So, we use ANMS (Adaptive Non-Maximal Suppression) to only retain key points that are well spread out across the image.
+            <ol>
+                <li>First, we get the corner scores for each filtered harris point from the Harris matrix H.</li>
+                <li>Next, we create a matrix for each point's threshold values. 
+                    I chose c_robust = 0.9. 
+                    The reason why I created this temporary value matrix is so that I can utilize numpy's matrix computation to quickly create a mask in a later step.
+                    Then, using this, I can quickly compare each threshold to another point's, which I can again easily process using numpy's matrix support.</li>
+                <li>Now, I create the square mask matrix, where I compare each pixel's threshold to another's.
+                    A value in this matrix is true only if a given pixel's score is lower than the suppression threshold of the other point, meaning that the first point should be considered to be kept or not.
+                </li>
+                <li>
+                    Finally, using dist2(), the given function to calculate the distance between two points, and the mask, I can mass-calculate the distances between points.
+                    The key is to set the distance between two points to be infinity (np.inf) IF the first point does not satisfy the suppression threshold of the second point.
+                    I heavily utilized numpy functions here, which allowed me to not use manual for() loops, which did help speed up my code.
+                </li>
+                <li>
+                    Now, we have a list of distances for each point. 
+                    According to the paper, we should only care about the points that had the greatest radii. 
+                    So, we can simply rank the radii based on their values, and select the points with corresponding indicies to be kept.
+                </li>
+            </ol>
+            Using this ANMS method, we have cut down the number of points significantly, while still keeping the most important ones.
+            For this run, I only kept 500 points for each image.
+            Below are the results:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original left image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after filtering only</div>
+                <img class="image" src="im2/harris_im2.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after ANMS</div>
+                <img class="image" src="im2/ANMS_im2.png" alt="Image 3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original right image</div>
+                <img class="image" src="images/2r.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after filtering only</div>
+                <img class="image" src="im2/harris_im1.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after ANMS</div>
+                <img class="image" src="im2/ANMS_im1.png" alt="Image 3">
+            </div>
+        </div>
+        <p>
+            As shown above, the number of points have been significantly reduced, while still keeping the most important ones.
+            And, the points are still at important locations, such as the windows or nearing certain other edges/features.
+            A visual check can be used by comparing these results to the Harris matrix; the final points are all in those bright regions too.
+            So, these points are good enough, and we move onto the next step.
+        </p>
+    </div>
+    <div class="section">
+        <h2>Step 2: Extracting a Feature Descriptor for each feature point</h2>
+        <p>
+            Now, we use MOPS (Multiscale Oriented Patches) to extract feature descriptors for each point.
+            We take in the coordinate points from the previous step.
+            For each point, we first create a 40x40 pixel patch around it.
+            Next, to save computation, I downsized each patch to 8x8 pixels, and I normalized the values in this small patch.
+            Finally, I flatten the collected descriptors each into a 1x64 vector, and I return the results.
+            Below are some of the 8x8 patches detected for the right image:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Patch 1</div>
+                <img class="image" src="im2/p0.png" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Patch 2</div>
+                <img class="image" src="im2/p1.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Patch 3</div>
+                <img class="image" src="im2/p2.png" alt="Image 3">
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Step 3: Matching feature descriptors between two images</h2>
+        <p>
+            After getting the two feature descriptors for both images, we now need to match them.
+            <ol>
+                <li>
+                    First, we get the pairwise distance matrix between each descriptor points. 
+                    This also sets up the later matrix computations, allowing for a faster approach.
+                </li>
+                <li>
+                    Now, we loop through the descriptors of the first image, trying to match them to the second image.
+                    We only sort the rows (for each descriptor for image 1) of the distance matrix, and we then sort these values.
+                    Because we only care about the indices of the values, rather than then actual values themselves, argsort() is used instead of sort().
+                </li>
+                <li>
+                    Next, we use Lowe's techinque to find the best matches.
+                    We have the ranked distances from the last step.
+                    Lowe's technique states that if there is a best match, then the current nearest neighbor should be significantly closer than the second nearest neighbor.
+                    So, we can simply compare this ratio for each pixel pairing and, if it is above a certain threshold, then we can consider that the two descriptors between the images are indeed a good match.
+                    Only if the threshold condition is met do we remember the matching indices of the descriptors, in the exact same order to preserve the match connection.
+                </li>
+                <li>
+                    Finally, we return the two lists of coordinates for the two images.
+                    For a given i, the ith point in the first list will match to the ith point in the second list.
+                </li>
+            </ol>
+            Below are the results after matching and keeping those descriptor points. 
+            The threshold I used was 0.7, which was a good value based on the paper.
+            Compared to the points kept after using ANMS, there are significantly less points.
+            And visually, we can see how most of these points match to each other.            
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original left image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after ANMS</div>
+                <img class="image" src="im2/ANMS_im2.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after matching</div>
+                <img class="image" src="im2/match_im2.png" alt="Image 2">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original right image</div>
+                <img class="image" src="images/2r.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after ANMS</div>
+                <img class="image" src="im2/ANMS_im1.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after matching</div>
+                <img class="image" src="im2/match_im1.png" alt="Image 3">
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Step 4: Use RANSAC to compute a homography</h2>
+        <p>
+            Now, the points above still aren't exactly perfect.
+            On closer inspection, we can already spot some outliers.
+            For example, for the image on the right, it includes part of the biology building that is not present in the first image.
+            Yet, the matching algorithm still captured some points in this right image region.
+            So, now we use RANSAC to find the best homography between these two images, while also further filtering and keeping a better list of points.
+            <ol>
+                <li>
+                    We first randomly select 4 points from the matched pairings to compute an exact homography.
+                    Because there are exactly 4 points, there is no need for least squares to give an approximate solution.
+                </li>
+                <li>
+                    Next, we warp all of the points from the first image using this homography, and we normalize them.
+                </li>
+                <li>
+                    After this, we create a mask to determine which warped points are close enough to the second image's points.
+                    For this step, I used a threshold of 4.
+                    By creating such a matrix, I can simply use numpy to quickly search through it, only keeping the points that have the error less than the threshold.
+                    The points that are kept are the inliner points based on this homography.
+                </li>
+                <li>
+                    Finally, I keep the mask and record the number of inliners counted.
+                </li>
+            </ol>
 
+            We loop the above steps repeatedly, where currently I have around 1000 iterations.
+            After all of these iterations with the random sampling to try out random homographies, we finally find the iteration with the largest number of inliners.
+            Then, we simply use the mask from this iteration to get the indices of the inliner points, and we return the two list of points, one for each image.
+            The key to RANSAC, as discussed in lecture, is that the actual homography is not the homography of the 4 randomly-selected points.
+            Instead, it is the homography of all of the inliner points.
+            This is why we need to keep track and eventually return those points, meaning that hopefully RANSAC will return more than 4 points per list.
+            Below are the results, comparing the points found after matching features to the points found after using RANSAC:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original left image</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after matching</div>
+                <img class="image" src="im2/match_im2.png" alt="Image 3">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after RANSAC</div>
+                <img class="image" src="im2/RAN_im2.png" alt="Image 2">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Original right image</div>
+                <img class="image" src="images/2r.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after matching</div>
+                <img class="image" src="im2/match_im1.png" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Points after RANSAC</div>
+                <img class="image" src="im2/RAN_im1.png" alt="Image 3">
+            </div>
+        </div>
+        <p>
+            After this step, we can see that the number of points have shrunk down even more.
+            And, the outliers from the matching step have been removed.
+            Each point from one image has an exact match in the other, and only these points are retained.
+        </p>
+    </div>
+    <div class="section">
+        <h2>Step 5: Generate the mosaic</h2>
+        <p>
+            For this step, we simply reuse code from the first part in the project.
+            The results are basically the same, since for the manually selected points, I was careful to only click certain prominent corners in each image.
+            Below are the results of the three mosaics, comparing them with the first part where the points are manually selected:
+        </p>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Left image near Moffit</div>
+                <img class="image" src="images/1l.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Right image near Moffit</div>
+                <img class="image" src="images/1m.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Manual mosaic</div>
+                <img class="image" src="images/hall.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Auto mosaic</div>
+                <img class="image" src="im2/auto_hall.jpg" alt="Image 1">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Left image near Way West</div>
+                <img class="image" src="images/2m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Right image near Way West</div>
+                <img class="image" src="images/2r.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Manual mosaic</div>
+                <img class="image" src="images/outside.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Auto mosaic</div>
+                <img class="image" src="im2/auto_outside.jpg" alt="Image 1">
+            </div>
+        </div>
+        <div class="row">
+            <div class="progress-row">
+                <div class="description">Left image of room</div>
+                <img class="image" src="images/4m.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Right image of room</div>
+                <img class="image" src="images/4r.jpg" alt="Image 2">
+            </div>
+            <div class="progress-row">
+                <div class="description">Manual Mosaic</div>
+                <img class="image" src="images/room.jpg" alt="Image 1">
+            </div>
+            <div class="progress-row">
+                <div class="description">Auto mosaic</div>
+                <img class="image" src="im2/auto_room.jpg" alt="Image 1">
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>
+            Conclusion
+        </h2>
+        <p>
+            This project was really interesting and fun.
+            The first part was a good introduction to homographies and warping images.
+            The theory was not as challenging, but seeing the results was really cool.
+            However, the coolest thing is the second part of the project.
+            I didn't get the change to replicate a paper before, and especially implementing such an automated algorithm from scratch was really cool.
+            Specifically, I thought that implementing RANSAC was the most interesting part.
+            I played around with the parameters a lot, but past a certain point the resulting mosaics would converge to the same good result.
+            Overally, this project deepend my understanding of homographies and taught me how to implement a paper from scratch.
+        </p>
+    </div>
     
 </body>
 </html>
